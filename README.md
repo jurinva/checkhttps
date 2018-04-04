@@ -1,5 +1,5 @@
 # checksslexpire
-The script to check the expiration date of the SSL certificate
+Script to check SSL certificate expiration and send notifications
 
 ## Features
 
