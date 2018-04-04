@@ -34,7 +34,7 @@ function check-cron {
 }
 
 function check-command {
-  if [ ! `command -v http; echo $?` ]; then apt -y install httpie; fi
+#  if [ ! `command -v http; echo $?` ]; then apt -y install httpie; fi
 }
 
 function check-cert-date {
