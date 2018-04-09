@@ -37,7 +37,7 @@ function check-cert-date {
     certexp=`echo | openssl s_client -servername $I -connect $I:$siteport 2>/dev/null | openssl x509 -noout -dates | grep notAfter | cut -d'=' -f'2'`
     cermon=`echo $certexp | cut -d' ' -f1`
     cerday=`echo $certexp | cut -d' ' -f2`
-    daydif=$((10#$cerday-10#$curday))
+    daydif=$(($cerday-$curday))
     text="Cerificate of $I will expired over $daydif days"
     telegram
     if [ $curmon == $cermon ] && [ $daydif -lt $notifyback ]; then
