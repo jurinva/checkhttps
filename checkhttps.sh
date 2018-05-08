@@ -1,9 +1,58 @@
 #!/bin/bash
 #Script for SSL certificate date expire and send notification
 
-. /etc/checkhttps.conf
-
 # Check functions
+
+if [ $# -gt 0 ]; then
+  while [[ $# -gt 0 ]]; do
+    key="$1"
+    case $key in
+      -s|--site)
+      SITE="$2"
+      shift # past argument
+      shift # past value
+      ;;
+      -m|--mode)
+      MODE="$2"
+      shift # past argument
+      shift # past value
+      ;;
+      -n|--notify)
+      NOTIFY="$2"
+      shift # past argument
+      shift # past value
+      ;;
+      -t|--messenger)
+      MESSENGER="$2"
+      shift # past argument
+      shift # past value
+      ;;
+      -p|--proxy)
+      PROXY="$2"
+      shift # past argument
+      shift # past value
+      ;;
+      --tapi)
+      TELEGRAM_APITOKEN="$2"
+      shift # past argument
+      shift # past value
+      ;;
+      --tid)
+      TELEGRAM_CHATID="$2"
+      shift # past argument
+      shift # past value
+      ;;
+#      *)    # unknown option
+#      POSITIONAL+=("$1") # save it in an array for later
+#      shift # past argument
+#      ;;
+    esac
+  done
+else
+  . /etc/checkhttps.conf
+fi
+
+[[ $SITEPORT == '' ]] && SITEPORT=443
 
 function check-inet {
   if [ `ping -c2 > /dev/null 8.8.8.8 && ping=ok || ping=critical` == "ok" ]; then echo 0; else echo 1; fi
@@ -25,23 +74,23 @@ function check-command {
 
 function check-system {
   if [ `grep docker /proc/1/cgroup > /dev/null; echo $?` -eq 0 ]
-    then rid=1; if [ $mode == "h" ]; then echo "I'm running inside of docker, but your config for host. Set mode=d please."; exit; fi;
-    else rid=0; if [ $mode == "d" ]; then echo "I'm running on host, but your config for docker. Set mode=h please."; exit; fi;
+    then rid=1; if [ $MODE == "h" ]; then echo "I'm running inside of docker, but your config for host. Set MODE=d please."; exit; fi;
+    else rid=0; if [ $MODE == "d" ]; then echo "I'm running on host, but your config for docker. Set MODE=h please."; exit; fi;
   fi
 }
 
 function check-cert-date {
-  for I in $site; do
+  for I in $SITE; do
     curmon=`LANG=en_en.UTF-8; date +%b`
     curday=`date +%d`
-    certexp=`echo | openssl s_client -servername $I -connect $I:$siteport 2>/dev/null | openssl x509 -noout -dates | grep notAfter | cut -d'=' -f'2'`
+    certexp=`echo | openssl s_client -servername $I -connect $I:$SITEPORT 2>/dev/null | openssl x509 -noout -dates | grep notAfter | cut -d'=' -f'2'`
     cermon=`echo $certexp | cut -d' ' -f1`
     cerday=`echo $certexp | cut -d' ' -f2`
     daydif=$((10#$cerday-10#$curday))
     text="Cerificate of $I will expired over $daydif days"
     telegram
-    if [ $curmon == $cermon ] && [ $daydif -lt $notifyback ]; then
-      case "$messenger" in
+    if [ $curmon == $cermon ] && [ $daydif -lt $NOTIFY ]; then
+      case "$MESSENGER" in
         slack ) slack;;
         telegram ) telegram;;
       esac
@@ -61,7 +110,7 @@ function slack {
 }
 
 function telegram {
-  curl -s -X POST https://api.telegram.org/bot$telegram_apitoken/sendMessage -d text="$text" -d chat_id=$telegram_chatid
+  curl --socks5 tg.airpush.com:1883 -s -X POST https://api.telegram.org/bot$TELEGRAM_APITOKEN/sendMessage -d text="$text" -d chat_id=$TELEGRAM_CHATID
 }
 
 # Action functions
@@ -73,7 +122,7 @@ function telegram {
 function fdock {
   while true; do
     check-cert-date
-    sleep $period
+    sleep $PERIOD
   done
 }
 
@@ -83,13 +132,19 @@ function fhost {
   check-cert-date
 }
 
+function testsite {
+  check-command
+  check-cert-date
+}
+
 # General functions
 
 function main {
   check-system
-  case "$mode" in
+  case "$MODE" in
     d ) fdock;;
     h ) fhost;;
+    t ) testsite;;
   esac
 }
 
