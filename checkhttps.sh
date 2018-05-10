@@ -106,11 +106,15 @@ function check-cert-date {
 
 function slack {
 #  echo "{\"channel\": \"$slack_channel\", \"icon_emoji\":\":${slack_icon}:\", \"username\":\"$slack_username\", \"text\": \"$text\"}" | http POST $slack_webhookurl > /dev/null;;
-  curl -X POST -H 'Content-type: application/json' --data "{\"channel\": \"$slack_channel\", \"icon_emoji\":\":${slack_icon}:\", \"username\":\"$slack_username\", \"text\": \"$text\"}" $slack_webhookurl
+  curl -X POST -H 'Content-type: application/json' \
+    --data "{\"channel\": \"$slack_channel\", \"icon_emoji\":\":${slack_icon}:\", \"username\":\"$slack_username\", \"text\": \"$text\"}" $slack_webhookurl
 }
 
 function telegram {
-  curl --socks5 tg.airpush.com:1883 -s -X POST https://api.telegram.org/bot$TELEGRAM_APITOKEN/sendMessage -d text="$text" -d chat_id=$TELEGRAM_CHATID
+  curl -s -X POST https://api.telegram.org/bot$TELEGRAM_APITOKEN/sendMessage \
+    --socks5 tg.airpush.com:1883
+    -d text="$text" \
+    -d chat_id=$TELEGRAM_CHATID
 }
 
 # Action functions
