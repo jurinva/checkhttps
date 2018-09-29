@@ -12,17 +12,17 @@ if [ $# -gt 0 ]; then
       shift # past argument
       shift # past value
       ;;
-      -m|--mode)
-      MODE="$2"
-      shift # past argument
-      shift # past value
-      ;;
+#      -m|--mode)
+#      MODE="$2"
+#      shift # past argument
+#      shift # past value
+#      ;;
       -n|--notify)
       NOTIFY="$2"
       shift # past argument
       shift # past value
       ;;
-      -t|--messenger)
+      -m|--messenger)
       MESSENGER="$2"
       shift # past argument
       shift # past value
@@ -42,6 +42,21 @@ if [ $# -gt 0 ]; then
       shift # past argument
       shift # past value
       ;;
+      -c|--channel)
+      SLACK_CHANNEL="$2"
+      shift # past argument
+      shift # past value
+      ;;
+      -u|--user)
+      SLACK_USERNAME="$2"
+      shift # past argument
+      shift # past value
+      ;;
+      -w|--webhookurl)
+      SLACK_WEBHOOKURL="$2"
+      shift # past argument
+      shift # past value
+      ;;
 #      *)    # unknown option
 #      POSITIONAL+=("$1") # save it in an array for later
 #      shift # past argument
@@ -53,10 +68,11 @@ else
 fi
 
 [[ $SITEPORT == '' ]] && SITEPORT=443
+[[ $NOTIFY == '' ]] && NOTIFY=5
 
-function check-inet {
-  if [ `ping -c2 > /dev/null 8.8.8.8 && ping=ok || ping=critical` == "ok" ]; then echo 0; else echo 1; fi
-}
+#function check-inet {
+#  if [ `ping -c2 > /dev/null 8.8.8.8 && ping=ok || ping=critical` == "ok" ]; then echo 0; else echo 1; fi
+#}
 
 function check-cron {
   if [ ! -f /etc/cron.d/$cronfilename ]; then echo "0 * * * *     root   $script_dir/checksslexpire.sh" > /etc/cron.d/$cronfilename; fi
@@ -72,12 +88,12 @@ function check-command {
   done
 }
 
-function check-system {
-  if [ `grep docker /proc/1/cgroup > /dev/null; echo $?` -eq 0 ]
-    then rid=1; if [ $MODE == "h" ]; then echo "I'm running inside of docker, but your config for host. Set MODE=d please."; exit; fi;
-    else rid=0; if [ $MODE == "d" ]; then echo "I'm running on host, but your config for docker. Set MODE=h please."; exit; fi;
-  fi
-}
+#function check-system {
+#  if [ `grep docker /proc/1/cgroup > /dev/null; echo $?` -eq 0 ]
+#    then rid=1; if [ $MODE == "h" ]; then echo "I'm running inside of docker, but your config for host. Set MODE=d please."; exit; fi;
+#    else rid=0; if [ $MODE == "d" ]; then echo "I'm running on host, but your config for docker. Set MODE=h please."; exit; fi;
+#  fi
+#}
 
 function check-cert-date {
   for I in $SITE; do
@@ -94,8 +110,8 @@ function check-cert-date {
     telegram
     if [ $curyear == $ceryear ] && [ $curmon == $cermon ] && [ $daydif -lt $NOTIFY ]; then
       case "$MESSENGER" in
-        slack ) slack;;
-        telegram ) telegram;;
+        s ) slack;;
+        t ) telegram;;
       esac
     fi
   done
@@ -110,7 +126,7 @@ function check-cert-date {
 function slack {
 #  echo "{\"channel\": \"$slack_channel\", \"icon_emoji\":\":${slack_icon}:\", \"username\":\"$slack_username\", \"text\": \"$text\"}" | http POST $slack_webhookurl > /dev/null;;
   curl -X POST -H 'Content-type: application/json' \
-    --data "{\"channel\": \"$slack_channel\", \"icon_emoji\":\":${slack_icon}:\", \"username\":\"$slack_username\", \"text\": \"$text\"}" $slack_webhookurl
+    --data "{\"channel\": \"$SLACK_CHANNEL\", \"icon_emoji\":\":${slack_icon}:\", \"username\":\"$SLACK_USERNAME\", \"text\": \"$text\"}" $SLACK_WEBHOOKURL
 }
 
 function telegram {
@@ -126,33 +142,36 @@ function telegram {
 #
 #}
 
-function fdock {
-  while true; do
-    check-cert-date
-    sleep $PERIOD
-  done
-}
+#function fdock {
+#  while true; do
+#    check-cert-date
+#    sleep $PERIOD
+#  done
+#}
 
-function fhost {
-  check-cron
-  check-command
-  check-cert-date
-}
+#function fhost {
+#  check-cron
+#  check-command
+#  check-cert-date
+#}
 
-function testsite {
-  check-command
-  check-cert-date
-}
+#function testsite {
+#  check-command
+#  check-cert-date
+#}
 
 # General functions
 
 function main {
-  check-system
-  case "$MODE" in
-    d ) fdock;;
-    h ) fhost;;
-    t ) testsite;;
-  esac
+#  check-system
+  check-cron
+  check-command
+  check-cert-date
+#  case "$MODE" in
+#    d ) fdock;;
+#    h ) fhost;;
+#    t ) testsite;;
+#  esac
 }
 
 main
