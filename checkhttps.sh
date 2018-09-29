@@ -83,13 +83,16 @@ function check-cert-date {
   for I in $SITE; do
     curmon=`LANG=en_en.UTF-8; date +%b`
     curday=`date +%d`
+    curyear=`date +%Y`
     certexp=`echo | openssl s_client -servername $I -connect $I:$SITEPORT 2>/dev/null | openssl x509 -noout -dates | grep notAfter | cut -d'=' -f'2'`
     cermon=`echo $certexp | cut -d' ' -f1`
     cerday=`echo $certexp | cut -d' ' -f2`
+    ceryear=`echo $certexp | cut -d' ' -f4`
     daydif=$((10#$cerday-10#$curday))
+    yeardif=$((10#$ceryear-10#$curyear))
     text="Cerificate of $I will expired over $daydif days"
     telegram
-    if [ $curmon == $cermon ] && [ $daydif -lt $NOTIFY ]; then
+    if [ $curyear == $ceryear ] && [ $curmon == $cermon ] && [ $daydif -lt $NOTIFY ]; then
       case "$MESSENGER" in
         slack ) slack;;
         telegram ) telegram;;
